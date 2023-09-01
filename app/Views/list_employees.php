@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('title_page') ?>
-    List Pegawai
+    List Employee
 <?= $this->endSection() ?>
 
 <?= $this->section('add_action') ?>
