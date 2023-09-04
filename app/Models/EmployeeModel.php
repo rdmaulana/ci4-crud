@@ -27,7 +27,8 @@ class EmployeeModel extends Model
 
     public function updateEmployee($id, $data) {
         $builder = $this->db->table($this->table);
-        return $builder->update($id, $data);
+        $builder->where('id', $id);
+        return $builder->update($data);
     }
 
     public function deleteEmployee($id) {

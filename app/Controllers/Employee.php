@@ -19,16 +19,27 @@ class Employee extends BaseController
         return view('list_employees', $data);
     }
 
+    public function getValidationRules($rules) {
+        if ($rules === 'edit') {
+            return [
+                'name' => 'required',
+                'email' => 'required|valid_email'
+            ];
+        };
+        
+        return [
+            'name' => 'required',
+            'email' => 'required|valid_email',
+            'photo' => 'uploaded[photo]|max_size[photo,300]|ext_in[photo,jpg,jpeg]'
+        ];
+    }
+
     public function addEmployee() {
         return view('create_employee');
     }
 
     public function store() {
-        $validationRules = [
-            'name' => 'required',
-            'email' => 'required|valid_email',
-            'photo' => 'uploaded[photo]|max_size[photo,300]|ext_in[photo,jpg,jpeg]'
-        ];
+        $validationRules = $this->getValidationRules('add');
 
         if ($this->validate($validationRules)) {
             $photo = $this->request->getFile('photo');
@@ -64,10 +75,7 @@ class Employee extends BaseController
         $model = new EmployeeModel();
         $photo = $this->request->getFile('photo');
     
-        $validationRules = [
-            'name' => 'required',
-            'email' => 'required|valid_email'
-        ];
+        $validationRules = $this->getValidationRules('edit');
 
         $fileUploaded = $photo->isValid() && !$photo->hasMoved();
 
@@ -88,7 +96,7 @@ class Employee extends BaseController
                 $data['photo'] = $photoName;
             }
     
-            $updated = $model->update($id, $data);
+            $updated = $this->employeeModel->updateEmployee($id, $data);
     
             if ($updated) {
                 return redirect()->to('/employee')->with('success', 'Employee updated successfully.');
