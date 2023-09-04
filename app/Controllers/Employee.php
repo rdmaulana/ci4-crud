@@ -4,12 +4,18 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\EmployeeModel;
+use CodeIgniter\HTTP\RequestInterface;
 
 class Employee extends BaseController
 {
+    protected $employeeModel;
+
+    public function __construct() {
+        $this->employeeModel = new EmployeeModel();
+    }
+    
     public function index() {
-        $model = new EmployeeModel();
-        $data['pegawai'] = $model->getEmployee();
+        $data['pegawai'] = $this->employeeModel->getEmployee();
         return view('list_employees', $data);
     }
 
@@ -18,8 +24,6 @@ class Employee extends BaseController
     }
 
     public function store() {
-        $model = new EmployeeModel();
-
         $validationRules = [
             'name' => 'required',
             'email' => 'required|valid_email',
@@ -38,7 +42,7 @@ class Employee extends BaseController
                 'position' => $this->request->getPost(('position')),
             ];
 
-            $saved = $model->saveEmployee($data);
+            $saved = $this->employeeModel->saveEmployee($data);
 
             if ($saved) {
                 return redirect()->to('/employee')->with('success', 'Employee added successfully.');
@@ -51,20 +55,26 @@ class Employee extends BaseController
     }
 
     public function edit($id) {
-        $model = new EmployeeModel();
-        $data['employee'] = $model->getEmployee($id);
+        $data['employee'] = $this->employeeModel->getEmployee($id);
     
         return view('edit_employee', $data);
     }    
 
     public function update($id) {
         $model = new EmployeeModel();
+        $photo = $this->request->getFile('photo');
     
         $validationRules = [
             'name' => 'required',
             'email' => 'required|valid_email'
         ];
-    
+
+        $fileUploaded = $photo->isValid() && !$photo->hasMoved();
+
+        if ($fileUploaded) {
+            $validationRules['photo'] = 'uploaded[photo]|max_size[photo,300]|ext_in[photo,jpg,jpeg]';
+        }
+        
         if ($this->validate($validationRules)) {
             $data = [
                 'name' => $this->request->getPost('name'),
@@ -72,14 +82,13 @@ class Employee extends BaseController
                 'position' => $this->request->getPost('position')
             ];
     
-            $photo = $this->request->getFile('photo');
-            if ($photo->isValid() && !$photo->hasMoved()) {
+            if ($fileUploaded) {
                 $photoName = $photo->getRandomName();
                 $photo->move(ROOTPATH.'public/assets/uploads/', $photoName);
                 $data['photo'] = $photoName;
             }
     
-            $updated = $model->updateEmployee($id, $data);
+            $updated = $model->update($id, $data);
     
             if ($updated) {
                 return redirect()->to('/employee')->with('success', 'Employee updated successfully.');
