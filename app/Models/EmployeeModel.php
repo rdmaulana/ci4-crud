@@ -33,6 +33,7 @@ class EmployeeModel extends Model
 
     public function deleteEmployee($id) {
         $builder = $this->db->table($this->table);
-        return $builder->delete($id);
+        $builder->where('id', $id);
+        return $builder->delete();
     }
 }

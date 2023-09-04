@@ -22,12 +22,19 @@ class UserModel extends Model
         return $builder->insert($data);
     }
 
+    public function updateUser($id, $data) {
+        $builder = $this->db->table($this->table);
+        $builder->where('id', $id);
+        return $builder->update($data);
+    }
+
     public function getUsername($username){
         return $this->where(['username' => $username])->first();
     }
 
     public function deleteUser($id) {
         $builder = $this->db->table($this->table);
-        return $builder->delete($id);
+        $builder->where('id', $id);
+        return $builder->delete();
     }
 }

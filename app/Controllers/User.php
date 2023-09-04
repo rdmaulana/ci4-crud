@@ -7,10 +7,31 @@ use App\Models\UserModel;
 
 class User extends BaseController
 {
+    protected $userModel;
+
+    public function __construct() {
+        $this->userModel = new UserModel();
+    }
+
     public function index() {
-        $model = new UserModel();
-        $data['users'] = $model->getUser();
+        $data['users'] = $this->userModel->getUser();
         return view('list_users', $data);
+    }
+
+    public function getValidationRules($rules, $id = null) {
+        if ($rules === 'edit') {
+            return [
+                'username' => 'required|min_length[3]|is_unique[users.username,id,' . $id . ']',
+                'role' => 'required',
+            ];
+        };
+        
+        return [
+            'username' => 'required|min_length[3]|is_unique[users.username]',
+            'password' => 'required|min_length[6]',
+            'retype_password' => 'required|matches[password]',
+            'role'     => 'required'
+        ];
     }
 
     public function add(){
@@ -18,15 +39,10 @@ class User extends BaseController
     }
 
     public function store() {
-        $model = new UserModel();
         $request = service('request');
+        $rules = $this->getValidationRules('add');
 
-        if ($request->getMethod() === 'post' && $this->validate([
-            'username' => 'required|min_length[3]|is_unique[users.username]',
-            'password' => 'required|min_length[6]',
-            'retype_password' => 'required|matches[password]',
-            'role'     => 'required',
-        ])) {
+        if ($request->getMethod() === 'post' && $rules) {
             $password = $request->getPost('password');
             $retypePassword = $request->getPost('retype_password');
 
@@ -39,7 +55,7 @@ class User extends BaseController
                     'role'     => $this->request->getPost('role'),
                 ];
 
-                $model->saveUser($data);
+                $this->userModel->saveUser($data);
 
                 return redirect()->to('/users')->with('success', 'User has been added');
             } else {
@@ -51,21 +67,14 @@ class User extends BaseController
     }
 
     public function edit($id) {
-        $model = new UserModel();
-        $data['userData'] = $model->getUser($id);
-    
+        $data['userData'] = $this->userModel->getUser($id);
+
         return view('edit_user', $data);
     }   
 
     public function update($id) {
-        $model = new UserModel();
         $request = service('request');
-
-        $rules = [
-            'username' => 'required|min_length[3]|is_unique[users.username,id,' . $id . ']',
-            'role' => 'required',
-        ];
-
+        $rules = $this->getValidationRules('edit', $id);
         $password = $request->getPost('password');
         $retypePassword = $request->getPost('retype_password');
 
@@ -75,7 +84,7 @@ class User extends BaseController
         }
 
         if ($request->getMethod() === 'post' && $this->validate($rules)) {
-            $userData = $model->getUser($id);
+            $userData = $this->userModel->getUser($id);
 
             if (empty($userData)) {
                 return redirect()->to('/users')->with('error', 'User not found');
@@ -95,7 +104,7 @@ class User extends BaseController
                 }
             }
 
-            $updated = $model->update($id, $data);
+            $updated = $this->userModel->updateUser($id, $data);
 
             if ($updated) {
                 return redirect()->to('/users')->with('success', 'User updated successfully.');
@@ -103,19 +112,18 @@ class User extends BaseController
                 return redirect()->to('/users')->with('error', 'Failed to update user.');
             }
         } else {
-            return view('edit_user', ['validation' => $this->validator, 'userData' => $model->getUser($id)]);
+            return view('edit_user', ['validation' => $this->validator, 'userData' => $this->userModel->getUser($id)]);
         }
     }
 
     public function delete($id) {
-        $model = new UserModel();
-        $employee = $model->getUser($id);
+        $employee = $this->userModel->getUser($id);
     
         if (!$employee) {
             return redirect()->to('/users')->with('error', 'User not found.');
         }
     
-        $deleted = $model->delete($id);
+        $deleted = $this->userModel->deleteUser($id);
     
         if ($deleted) {
             return redirect()->to('/users')->with('success', 'User deleted successfully.');
